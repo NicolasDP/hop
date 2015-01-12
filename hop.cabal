@@ -1,0 +1,33 @@
+name:                hop
+version:             0.0.0.1
+synopsis:            Hop is a Github Client for collaborative work
+description:
+    Hop is a simple Command Line Interface for GitHub Client.
+    It is mainly designed to help you work on collaborative projects:
+    * list the pull request
+    * review the pull request
+    * try a pull request
+license:             BSD3
+license-file:        LICENSE
+author:              Nicolas DI PRIMA
+maintainer:          nicolas@di-prima.fr
+copyright:           (c) 2015, Nicolas DI PRIMA <nicolas@di-prima.fr>
+category:            Development
+build-type:          Simple
+cabal-version:       >=1.10
+
+executable hop
+  main-is:             Main.hs
+  other-modules:       Hop.Config
+                       Hop.PullRequest
+  build-depends:       base >=4.7 && <4.8
+                     , github >=0.13
+                     , directory
+                     , filepath
+                     , process >=1.2.1.0
+  hs-source-dirs:      src
+                     , .
+  default-language:    Haskell2010
+  ghc-options:         -Wall -fno-warn-missing-signatures
+  if os(windows)
+    cpp-options:       -DWINDOWS
