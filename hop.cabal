@@ -15,6 +15,7 @@ copyright:           (c) 2015, Nicolas DI PRIMA <nicolas@di-prima.fr>
 category:            Development
 build-type:          Simple
 cabal-version:       >=1.10
+source-repository:   https://github.com/NicolasDP/hop
 
 executable hop
   main-is:             Main.hs
