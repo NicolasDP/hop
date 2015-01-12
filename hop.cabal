@@ -21,7 +21,7 @@ executable hop
   main-is:             Main.hs
   other-modules:       Hop.Config
                        Hop.PullRequest
-  build-depends:       base >=4.7 && <4.8
+  build-depends:       base >=4 && <5
                      , github >=0.13
                      , directory
                      , filepath
