@@ -21,7 +21,8 @@ startCommand args = do
     case args of
         "list":[] -> listOpenedPullRequests cfg
         "show":num:[] -> showPullRequest cfg (read num)
-        "try":num:[] -> attemptPullRequestTesting cfg (read num)
+        "try":num:[]               -> attemptPullRequestTesting cfg (read num) True
+        "try":"--no-rebase":num:[] -> attemptPullRequestTesting cfg (read num) False
         "review":num:[]           -> reviewPullRequestDiff cfg (read num)
         "review":"diff":num:[]    -> reviewPullRequestDiff cfg (read num)
         "review":"commits":num:[] -> reviewPullRequestCommits cfg (read num)
@@ -48,8 +49,8 @@ startHelpCommand comment = do
     putStrLn "  help: print this help message"
     putStrLn "  init: initialize the default configuration file (you may need to update it)"
     putStrLn "  list: list all the current pull request on the project"
-    putStrLn "  show <PullRequestNumber: show a given pull request"
-    putStrLn "  try <PullRequestNumber: create a new branch for the pull request and rebase it on master"
+    putStrLn "  show <PullRequestNumber>: show a given pull request"
+    putStrLn "  try [--no-rebase] <PullRequestNumber>: create a new branch for the pull request and rebase it on master (unless option --no-rebase)"
     putStrLn "  review [diff] <PullRequestNumber>: review the diff"
     putStrLn "  review commits <PullRequestNumber>: review the commits"
 

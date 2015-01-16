@@ -16,6 +16,7 @@ module Hop.PullRequest
 
 import Console.Color
 import Control.Applicative
+import Control.Monad
 import Data.Char (toLower)
 import Github.PullRequests
 import Hop.Config
@@ -181,8 +182,8 @@ getCommitInfo cfg prNumber = do
         Left  err -> error $ "showPullRequest: error: " ++ show err
         Right pr  -> return pr
 
-attemptPullRequestTesting :: Config -> Int -> IO ()
-attemptPullRequestTesting cfg prNumber = do
+attemptPullRequestTesting :: Config -> Int -> Bool -> IO ()
+attemptPullRequestTesting cfg prNumber rebase = do
     isSafe <- isItSafe
     case isSafe of
         False -> error "your working directory is not clean\nSave your changes before going further (see `git diff`)"
@@ -191,11 +192,11 @@ attemptPullRequestTesting cfg prNumber = do
             let baseBranch = pullRequestCommitRef $ detailedPullRequestBase pr
             let prBranch   = pullRequestCommitRef $ detailedPullRequestHead pr
             -- Make sure Master ref is up to date
-            fetchBranch "origin" baseBranch
+            when rebase $ fetchBranch "origin" baseBranch
             -- create a new branch and checkout on it for the test
             nbranch <- createOrUpdateBranch "origin" prBranch
             -- rebase the branch
-            rebaseBranchOnBranch ("origin", baseBranch) nbranch
+            when rebase $ rebaseBranchOnBranch ("origin", baseBranch) nbranch
 
 -- List Opened Pull requests --------------------------------------------------
 
