@@ -227,13 +227,14 @@ printPullRequestInfo indent pr = do
 
 showPullRequest :: Config -> Int -> IO ()
 showPullRequest cfg prNumber = do
-    epr <- pullRequest' (getProjectAuth cfg) (getProjectOwner cfg) (getProjectName cfg) prNumber
-    case epr of
-        Left  err -> error $ "showPullRequest: error: " ++ show err
-        Right pr  -> printDetailedPullRequest pr
+    pr    <- either printError id <$> pullRequest' (getProjectAuth cfg) (getProjectOwner cfg) (getProjectName cfg) prNumber
+    diffs <- either printError id <$> pullRequestFiles' (getProjectAuth cfg) (getProjectOwner cfg) (getProjectName cfg) prNumber
+    printDetailedPullRequest pr diffs
+  where
+    printError err = error $ "showPullRequest: error: " ++ show err
 
-printDetailedPullRequest :: DetailedPullRequest -> IO ()
-printDetailedPullRequest pr = do
+printDetailedPullRequest :: DetailedPullRequest -> [File] -> IO ()
+printDetailedPullRequest pr l = do
     -- print the basis information
     printf
         "[%u](%s) %s%s\n"
@@ -257,15 +258,48 @@ printDetailedPullRequest pr = do
     printf "\n"
     -- print pull request description
     printf
-        "Infos%s:\n"
+        "Infos%s: %u commit(s), %u changed file(s), %s+++%s %u %s---%s %u\n"
         (maybe "" (\b -> if b then " [mergeable]" else "[NOT-mergeable]") $ detailedPullRequestMergeable pr)
-    printf "  commit(s): %u\n" (detailedPullRequestCommits pr)
-    printf "  changed file(s): %u\n" (detailedPullRequestChangedFiles pr)
-    printf "  +++ %u\n" (detailedPullRequestAdditions pr)
-    printf "  --- %u\n" (detailedPullRequestDeletions pr)
+        (detailedPullRequestCommits pr)
+        (detailedPullRequestChangedFiles pr)
+        (console [Green]) (console [Reset]) (detailedPullRequestAdditions pr)
+        (console [Red])   (console [Reset]) (detailedPullRequestDeletions pr)
+    mapM_ printDiffsFileAndChanges l
     printf "\n"
     -- print general info
     printf "Description:\n%s\n" $
         if null $ detailedPullRequestBody pr
             then "  <no-description-provided>"
             else (unlines $ map (\str -> "  " ++ str) $ lines $ detailedPullRequestBody pr)
+
+printDiffsFileAndChanges :: File -> IO ()
+printDiffsFileAndChanges diff = do
+    printf
+        "  %s%s%s%-4s %s%s%s%-4s  %s%s%s\n"
+        (console [Green])
+        (if null numberOfAdd then "   " else "+++")
+        (console [Reset])
+        numberOfAdd
+
+        (console [Red])
+        (if null numberOfDel then "   " else "---")
+        (console [Reset])
+        (numberOfDel)
+
+        (console $ getAdaptedColor $ fileStatus diff)
+        (fileFilename diff)
+        (console [Reset])
+  where
+    numberOfAdd :: String
+    numberOfAdd = show $ fileAdditions diff
+
+    numberOfDel :: String
+    numberOfDel = show $ fileDeletions diff
+
+    getAdaptedColor :: String -> [ShellCode]
+    getAdaptedColor status =
+        case status of
+            "removed"  -> [Red]
+            "added"    -> [Green]
+            "modified" -> [Reset]
+            _          -> [Reset]
