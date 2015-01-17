@@ -145,10 +145,10 @@ isItSafe = do
 
 tryCommand :: String -> [String] -> IO (Either String ())
 tryCommand cmd opt = do
-    returnCode <- rawSystem cmd opt
+    (returnCode, _, stderror) <- readProcessWithExitCode cmd opt []
     case returnCode of
         ExitSuccess   -> return $ Right ()
-        ExitFailure i -> return $ Left ("\"" ++ cmd ++ " " ++ (show opt) ++"\" exit with " ++ show i)
+        ExitFailure i -> return $ Left ("\"" ++ cmd ++ " " ++ (show opt) ++"\" exit with " ++ show i ++ "\n\n" ++ stderror)
 
 fetchBranch :: String -> String -> IO ()
 fetchBranch remote branch = do
@@ -179,14 +179,19 @@ getCommitInfo :: Config -> Int -> IO DetailedPullRequest
 getCommitInfo cfg prNumber = do
     epr <- pullRequest' (getProjectAuth cfg) (getProjectOwner cfg) (getProjectName cfg) prNumber
     case epr of
-        Left  err -> error $ "showPullRequest: error: " ++ show err
+        Left  err -> error $ "getCommitInfo: " ++ show err
         Right pr  -> return pr
 
 attemptPullRequestTesting :: Config -> Int -> Bool -> IO ()
 attemptPullRequestTesting cfg prNumber rebase = do
     isSafe <- isItSafe
     case isSafe of
-        False -> error "your working directory is not clean\nSave your changes before going further (see `git diff`)"
+        False -> do
+            printf
+                "%s%s%sSave your changes before going further (see `git diff`)\n"
+                (console [Green, Red])
+                "your working directory is not clean\n"
+                (console [Reset])
         True  -> do
             pr <- getCommitInfo cfg prNumber
             let baseBranch = pullRequestCommitRef $ detailedPullRequestBase pr
@@ -218,11 +223,13 @@ printPullRequestsInfo indent (pr:prs) = do
 printPullRequestInfo :: String -> PullRequest -> IO ()
 printPullRequestInfo indent pr = do
     printf
-        "%s[%u] %-12s %s\n"
+        "%s[%u] %s%-16s%s %s\n"
         (indent)
         (pullRequestNumber pr)
+        (console [Bold, Blue])
         (githubOwnerLogin $ pullRequestUser pr)
-        (show $ pullRequestTitle pr)
+        (console [Reset])
+        (pullRequestTitle pr)
 
 -- Show a Pull Request --------------------------------------------------------
 
@@ -244,23 +251,23 @@ printDetailedPullRequest pr l = do
         (detailedPullRequestTitle pr)
         (if (detailedPullRequestMerged pr) then " [merged]" else "")
     -- print status information
-    printf "  Opened by %s\n" (githubOwnerLogin $ detailedPullRequestUser pr)
+    printf "  Opened by %s%s%s\n" (console [Bold, Blue]) (githubOwnerLogin $ detailedPullRequestUser pr) (console [Reset])
     printf "  Opened  %s\n" (show $ fromGithubDate $ detailedPullRequestCreatedAt pr)
     printf "  Updated %s\n" (show $ fromGithubDate $ detailedPullRequestUpdatedAt pr)
     case detailedPullRequestMergedAt pr of
         Nothing -> return ()
-        Just d  -> printf "  Merged  %s\n" (show $ fromGithubDate d)
+        Just d  -> printf "  Merged  %s%s%s\n" (console [Bold]) (show $ fromGithubDate d) (console [Reset])
     case detailedPullRequestMergedBy pr of
         Nothing -> return ()
-        Just u  -> printf "  Merged by %s\n" (githubOwnerLogin u)
+        Just u  -> printf "  Merged by %s%s%s\n" (console [Bold, Blue]) (githubOwnerLogin u) (console [Reset])
     case detailedPullRequestClosedAt pr of
         Nothing -> return ()
-        Just d  -> printf "  Closed  %s\n" (show $ fromGithubDate d)
+        Just d  -> printf "  Closed  %s%s%s\n" (console [Bold]) (show $ fromGithubDate d) (console [Reset])
     printf "\n"
     -- print pull request description
     printf
         "Infos%s: %u commit(s), %u changed file(s), %s+++%s %u %s---%s %u\n"
-        (maybe "" (\b -> if b then " [mergeable]" else "[NOT-mergeable]") $ detailedPullRequestMergeable pr)
+        (maybe "" (\b -> if b then " [mergeable]" else " [" ++ console [Bold, Green] ++ "NOT-mergeable" ++ console [Reset] ++ "]") $ detailedPullRequestMergeable pr)
         (detailedPullRequestCommits pr)
         (detailedPullRequestChangedFiles pr)
         (console [Green]) (console [Reset]) (detailedPullRequestAdditions pr)
