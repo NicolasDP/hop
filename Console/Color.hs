@@ -5,6 +5,14 @@
 -- Stability   : experimental
 -- Portability : unknown
 --
+-- Colorized output
+-- This function is a collection of helpers to print colorized string on Linux
+-- like Shell
+--
+-- Example:
+--
+-- > putStrLn $ (console [Bold, Blinking, Red]) ++ "something" ++ (console [Reset])
+--
 
 {-# LANGUAGE CPP #-}
 
