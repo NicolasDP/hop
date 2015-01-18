@@ -17,7 +17,14 @@ import System.Environment
 
 startCommand :: [String] -> IO ()
 startCommand args = do
-    cfg <- either error id <$> loadConfigFile
+    userCfg <- either error id <$> loadUserConfigFile
+    projCfg <- either error id <$> loadConfigFile
+
+    -- if project auth is not present, replace it by the user auth.
+    let cfg = case getProjectAuth projCfg of
+                Nothing -> projCfg { getProjectAuth = getUserAuth userCfg }
+                Just _  -> projCfg
+
     case args of
         "list":[] -> listOpenedPullRequests cfg
         "show":num:[] -> showPullRequest cfg (read num)
