@@ -12,13 +12,15 @@ module Hop.PullRequest
     , attemptPullRequestTesting
     , reviewPullRequestDiff
     , reviewPullRequestCommits
+    , createPullRequest
     ) where
 
 import Console.Color
 import Control.Applicative
 import Control.Monad
 import Data.Char (toLower)
-import Github.PullRequests
+import Github.PullRequests hiding (createPullRequest)
+import qualified Github.PullRequests as Github
 import Hop.Config
 import System.Process
 import System.Exit
@@ -38,6 +40,16 @@ prettyPrintDiffResume diff = do
     putStrLn $ "File: " ++ (fileFilename diff) ++ " [+/-" ++ (show $ fileChanges diff) ++ "]"
     putStrLn $ "additions: " ++ (console [Green, Bold]) ++ "+++" ++ console [Reset] ++ " " ++ (show $ fileAdditions diff)
     putStrLn $ "deletions: " ++ (console [Red, Bold])   ++ "---" ++ console [Reset] ++ " " ++ (show $ fileDeletions diff)
+
+-- Create Pull Request --------------------------------------------------------
+
+createPullRequest :: Config -> String -> String -> String -> IO ()
+createPullRequest cfg basePR headPR title = do
+    let auth = maybe (error "You must set the 'oauth' value in your hop file (see hop init)") id $ getProjectAuth cfg
+    epr <- Github.createPullRequest auth (getProjectOwner cfg) (getProjectName cfg) $ CreatePullRequest title Nothing headPR basePR
+    case epr of
+        Left err -> error $ "create pull request: " ++ show err
+        Right pr -> printDetailedPullRequest pr []
 
 -- Review the Diff ------------------------------------------------------------
 
