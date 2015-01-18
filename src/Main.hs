@@ -26,6 +26,8 @@ startCommand args = do
         "review":num:[]           -> reviewPullRequestDiff cfg (read num)
         "review":"diff":num:[]    -> reviewPullRequestDiff cfg (read num)
         "review":"commits":num:[] -> reviewPullRequestCommits cfg (read num)
+        "create":headPR:title:[]        -> createPullRequest cfg "master" headPR title
+        "create":basePR:headPR:title:[] -> createPullRequest cfg basePR   headPR title
         _         -> startHelpCommand $ Just $ "command not found: " ++ show args ++ "\n"
 
 startInitConfig :: IO ()
