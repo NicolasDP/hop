@@ -9,7 +9,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Hop.Config
-    ( Config(..)
+    ( UserConfig(..)
+    , Config(..)
+    , loadUserConfigFile
     , loadConfigFile
     , initConfigFile
     ) where
@@ -20,6 +22,10 @@ import qualified Data.String.Parse as Parser
 import Github.Auth
 import System.Directory
 import System.FilePath
+
+data UserConfig = UserConfig
+    { getUserAuth :: Maybe GithubAuth
+    } deriving (Show,Eq)
 
 data Config = Config
     { getProjectOwner :: String
@@ -85,13 +91,27 @@ lookupProjectPath' dir = do
     parentDir :: FilePath
     parentDir = takeDirectory dir
 
-
 loadConfigFile :: IO (Either String Config)
 loadConfigFile = do
     eprojectPath <- lookupProjectPath
     case eprojectPath of
         Left  err         -> return $ Left err
         Right projectPath -> parseConfigFile projectPath
+
+loadUserConfigFile :: IO (Either String UserConfig)
+loadUserConfigFile = do
+    home <- getHomeDirectory
+    let configPath = home </> ".hoprc"
+    exist <- doesFileExist configPath
+    if exist
+        then do content <- readFile configPath
+                return $ case Parser.parse userConfigFileParser content of
+                        ParseOK _ cfg -> Right cfg
+                        ParseFail err -> Left $ "error while parsing configuration file " ++ show configPath ++ ": " ++ err
+                        ParseMore _   -> Left $ "error while parsing configuration file " ++ show configPath ++ ": Not enough data"
+        else return $ Right $ UserConfig
+                { getUserAuth = Nothing
+                }
 
 parseConfigFile :: FilePath -> IO (Either String Config)
 parseConfigFile projectPath = do
@@ -107,6 +127,13 @@ parseConfigFile projectPath = do
   where
     configPath :: FilePath
     configPath = projectPath </> gitHopConfigPath
+
+userConfigFileParser :: Parser UserConfig
+userConfigFileParser = toUserConfig <$> parseKeyValues
+  where toUserConfig l =
+            UserConfig
+                { getUserAuth = GithubOAuth <$> lookup "oauth" l
+                }
 
 configFileParser :: FilePath -> Parser Config
 configFileParser projectPath = do
