@@ -72,6 +72,9 @@ defaultContent =
     ++ "\n"
     ++ "# Uncomment the following line and add your OAuth String\n"
     ++ "# You can generate a OAuth String in your Github Settings\n"
+    ++ "# You can also add this line in ~/.hoprc so all your Hop project might use\n"
+    ++ "# this OAuth String (but the hop.conf file in the .git directory is always\n"
+    ++ "# highest priority...\n"
     ++ "# oauth: \"your-oauth-string\"\n"
 
 lookupProjectPath :: IO (Either String FilePath)
