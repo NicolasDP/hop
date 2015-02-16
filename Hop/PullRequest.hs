@@ -12,15 +12,15 @@ module Hop.PullRequest
     , attemptPullRequestTesting
     , reviewPullRequestDiff
     , reviewPullRequestCommits
-    , createPullRequest
+    , createPullRequestBranch
+    , createPullRequestIssue
     ) where
 
 import Console.Color
 import Control.Applicative
 import Control.Monad
 import Data.Char (toLower)
-import Github.PullRequests hiding (createPullRequest)
-import qualified Github.PullRequests as Github
+import Github.PullRequests
 import Hop.Config
 import System.Process
 import System.Exit
@@ -43,10 +43,26 @@ prettyPrintDiffResume diff = do
 
 -- Create Pull Request --------------------------------------------------------
 
-createPullRequest :: Config -> String -> String -> String -> IO ()
-createPullRequest cfg basePR headPR title = do
+createPullRequestBranch :: Config
+                        -> String -- ^ Head
+                        -> String -- ^ Base
+                        -> String -- ^ Title
+                        -> IO ()
+createPullRequestBranch cfg headPR basePR title = do
     let auth = maybe (error "You must set the 'oauth' value in your hop file (see hop init)") id $ getProjectAuth cfg
-    epr <- Github.createPullRequest auth (getProjectOwner cfg) (getProjectName cfg) $ CreatePullRequest title Nothing headPR basePR
+    epr <- createPullRequest auth (getProjectOwner cfg) (getProjectName cfg) $ CreatePullRequest title "" headPR basePR
+    case epr of
+        Left err -> error $ "create pull request: " ++ show err
+        Right pr -> printDetailedPullRequest pr []
+
+createPullRequestIssue :: Config
+                       -> Int    -- ^ Issue Number
+                       -> String -- ^ Head
+                       -> String -- ^ Base
+                       -> IO ()
+createPullRequestIssue cfg issueNum headPR basePR = do
+    let auth = maybe (error "You must set the 'oauth' value in your hop file (see hop init)") id $ getProjectAuth cfg
+    epr <- createPullRequest auth (getProjectOwner cfg) (getProjectName cfg) $ CreatePullRequestIssue issueNum headPR basePR
     case epr of
         Left err -> error $ "create pull request: " ++ show err
         Right pr -> printDetailedPullRequest pr []

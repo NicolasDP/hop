@@ -33,8 +33,10 @@ startCommand args = do
         "review":num:[]           -> reviewPullRequestDiff cfg (read num)
         "review":"diff":num:[]    -> reviewPullRequestDiff cfg (read num)
         "review":"commits":num:[] -> reviewPullRequestCommits cfg (read num)
-        "create":headPR:title:[]        -> createPullRequest cfg "master" headPR title
-        "create":basePR:headPR:title:[] -> createPullRequest cfg basePR   headPR title
+        "create":headPR:title:[]        -> createPullRequestBranch cfg headPR "master" title
+        "create":"--issue":issue:headPR:[]        -> createPullRequestIssue cfg (read issue) headPR "master"
+        "create":headPR:basePR:title:[] -> createPullRequestBranch cfg headPR basePR   title
+        "create":"--issue":issue:headPR:basePR:[] -> createPullRequestIssue cfg (read issue) headPR basePR
         _         -> startHelpCommand $ Just $ "command not found: " ++ show args ++ "\n"
 
 startInitConfig :: IO ()
@@ -62,6 +64,8 @@ startHelpCommand comment = do
     putStrLn "  try [--no-rebase] <PullRequestNumber>: create a new branch for the pull request and rebase it on master (unless option --no-rebase)"
     putStrLn "  review [diff] <PullRequestNumber>: review the diff"
     putStrLn "  review commits <PullRequestNumber>: review the commits"
+    putStrLn "  create <HeadPR> [basePR] <PullRequestTitle>: create a pull request"
+    putStrLn "  create --issue <issueNumber> <HeadPR> [basePR]: create a pull request from an issue"
 
 main :: IO ()
 main = do
