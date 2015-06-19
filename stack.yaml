@@ -1,0 +1,9 @@
+resolver: lts-2.14
+
+packages:
+  - '.'
+
+extra-deps:
+  - github-0.13.2
+  - failure-0.2.0.3
+  - process-1.2.1.0
